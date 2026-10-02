@@ -4,6 +4,9 @@ import cv2
 import mediapipe as mp
 import config
 import time
+from collections import deque, namedtuple
+
+Point = namedtuple("Point", ["x", "y"])
 
 class GestureDetector:
     def __init__(self):
@@ -24,6 +27,22 @@ class GestureDetector:
         self.hold_start_time = None
         self.gesture_confirmed = config.GESTURE_UNKNOWN
         self.hold_progress = 0.0  # 0.0 to 1.0
+        self.hold_time = config.GESTURE_HOLD_TIME
+
+        # Landmark smoothing — averages the last 3 frames to cut jitter
+        self.landmark_history = deque(maxlen=3)
+
+    def smooth_landmarks(self, landmarks):
+        points = [(lm.x, lm.y) for lm in landmarks]
+        self.landmark_history.append(points)
+
+        n = len(self.landmark_history)
+        smoothed = []
+        for i in range(len(points)):
+            avg_x = sum(frame[i][0] for frame in self.landmark_history) / n
+            avg_y = sum(frame[i][1] for frame in self.landmark_history) / n
+            smoothed.append(Point(avg_x, avg_y))
+        return smoothed
 
     def get_finger_states(self, landmarks):
         fingers = []
@@ -87,9 +106,9 @@ class GestureDetector:
 
         # Same gesture held — check duration
         elapsed = time.time() - self.hold_start_time
-        self.hold_progress = min(elapsed / config.GESTURE_HOLD_TIME, 1.0)
+        self.hold_progress = min(elapsed / self.hold_time, 1.0)
 
-        if elapsed >= config.GESTURE_HOLD_TIME:
+        if elapsed >= self.hold_time:
             self.gesture_confirmed = gesture
             # Reset so it doesnt keep firing
             self.hold_start_time = time.time()
@@ -118,8 +137,11 @@ class GestureDetector:
                     hand_landmarks,
                     self.mp_hands.HAND_CONNECTIONS
                 )
-                fingers = self.get_finger_states(hand_landmarks.landmark)
+                smoothed = self.smooth_landmarks(hand_landmarks.landmark)
+                fingers = self.get_finger_states(smoothed)
                 raw_gesture, confidence = self.classify_gesture(fingers)
+        else:
+            self.landmark_history.clear()
 
         confirmed_gesture = self.update_hold_timer(raw_gesture)
         self.current_gesture = raw_gesture

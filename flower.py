@@ -72,6 +72,12 @@ class Flower:
             return True
         return False
 
+    def wilt(self):
+        if self.stage > config.STAGE_SEED:
+            self.stage -= 1
+            return True
+        return False
+
     def is_complete(self):
         return self.stage == config.STAGE_WIDE_BLOOM
 

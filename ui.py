@@ -4,6 +4,14 @@ import pygame
 import config
 
 class UI:
+    GESTURE_NAMES = {
+        config.GESTURE_OPEN_PALM: "Open Palm",
+        config.GESTURE_PEACE:     "Peace Sign",
+        config.GESTURE_FIST:      "Fist",
+        config.GESTURE_POINT_UP:  "Point Up",
+        config.GESTURE_UNKNOWN:   "No Gesture",
+    }
+
     def __init__(self, screen):
         self.screen = screen
         self.font_large = pygame.font.SysFont("Arial", config.FONT_LARGE, bold=True)
@@ -41,8 +49,10 @@ class UI:
         else:
             self.screen.fill((5, 15, 5))
 
-    def draw_background(self, danger=False):
-        if danger:
+    def draw_background(self, danger=False, zen=False):
+        if zen:
+            self.screen.fill(config.ZEN_BG_COLOR)
+        elif danger:
             self.screen.fill((40, 10, 10))
         else:
             self.screen.fill((10, 10, 15))
@@ -130,82 +140,105 @@ class UI:
                           config.SCREEN_WIDTH, 3))
 
         # Title small at top
-        small_title_font = pygame.font.SysFont("Georgia", 36, bold=True)
+        small_title_font = pygame.font.SysFont("Georgia", 32, bold=True)
         small_title = small_title_font.render("PETAL RUSH", True, config.WHITE)
         small_title_rect = small_title.get_rect(
-            center=(config.SCREEN_WIDTH // 2, 40))
+            center=(config.SCREEN_WIDTH // 2, 32))
         self.screen.blit(small_title, small_title_rect)
 
         # Thin gold divider under small title
         pygame.draw.rect(self.screen, (80, 60, 0),
                          (config.SCREEN_WIDTH // 2 - 200,
-                          65, 400, 1))
+                          54, 400, 1))
 
         # Select level heading
-        select_font = pygame.font.SysFont("Arial", 16, bold=True)
-        select = select_font.render("SELECT A LEVEL", True, config.GOLD)
+        select_font = pygame.font.SysFont("Arial", 15, bold=True)
+        select = select_font.render("SELECT A MODE", True, config.GOLD)
         select_rect = select.get_rect(
-            center=(config.SCREEN_WIDTH // 2, 90))
+            center=(config.SCREEN_WIDTH // 2, 74))
         self.screen.blit(select, select_rect)
 
-        # Level cards
-        levels = [
-            ("1", "Practice Garden",
-             "Bloom 5 flowers at your own pace. No timer, no pressure.",
-             (50, 180, 50)),
-            ("2", "Timed Bloom",
+        # Mode cards — 2 column grid, 4 rows
+        modes = [
+            ("1", "Timed Bloom",
              "Complete the collection target before 60 seconds runs out.",
              (180, 140, 0)),
-            ("3", "Survival Mode",
+            ("2", "Survival Mode",
              "90 sec. 3 lives. Weeds. Speed increases over time.",
              (180, 60, 60)),
+            ("3", "Zen Garden",
+             "No timer, no pressure. Bloom flowers forever.",
+             (80, 160, 200)),
+            ("4", "Speed Rush",
+             "60 sec. Gestures get faster every 10 seconds.",
+             (200, 100, 180)),
+            ("5", "Weather",
+             "90 sec. Bloom 5. Clear Rain/Wind events as they hit.",
+             (90, 150, 220)),
+            ("6", "Precision",
+             "0.5s gesture window. Build streak, avoid 3 wilts.",
+             (220, 170, 60)),
+            ("7", "Mirror Mode",
+             "Timed Bloom rules — but your webcam feed is reversed.",
+             (140, 110, 220)),
+            ("8", "Random",
+             "Required gestures randomly swap. Adapt fast for bonus.",
+             (90, 190, 120)),
         ]
 
-        card_y = 160
-        for num, name, desc, accent in levels:
-            card_x = config.SCREEN_WIDTH // 2 - 310
+        col_w = 580
+        card_h = 108
+        row_spacing = 120
+        gap = 40
+        group_w = col_w * 2 + gap
+        left_x = (config.SCREEN_WIDTH - group_w) // 2
+        right_x = left_x + col_w + gap
+        row_y_start = 100
+
+        for i, (num, name, desc, accent) in enumerate(modes):
+            row = i // 2
+            col = i % 2
+            card_x = left_x if col == 0 else right_x
+            card_y = row_y_start + row * row_spacing
 
             # Card background — semi transparent
-            card_surf = pygame.Surface((620, 120),
-                                       pygame.SRCALPHA)
+            card_surf = pygame.Surface((col_w, card_h), pygame.SRCALPHA)
             card_surf.fill((0, 0, 0, 160))
             self.screen.blit(card_surf, (card_x, card_y))
 
             # Card border
             pygame.draw.rect(self.screen, (40, 60, 40),
-                             (card_x, card_y, 620, 120),
+                             (card_x, card_y, col_w, card_h),
                              1, border_radius=8)
 
             # Left accent bar
             pygame.draw.rect(self.screen, accent,
-                             (card_x, card_y, 4, 120),
+                             (card_x, card_y, 4, card_h),
                              border_radius=8)
 
-            # Level number
-            num_font = pygame.font.SysFont("Georgia", 42, bold=True)
+            # Mode number
+            num_font = pygame.font.SysFont("Georgia", 32, bold=True)
             num_txt = num_font.render(num, True, accent)
-            self.screen.blit(num_txt, (card_x + 20, card_y + 35))
+            self.screen.blit(num_txt, (card_x + 18, card_y + 32))
 
             # Vertical divider
             pygame.draw.rect(self.screen, (50, 70, 50),
-                             (card_x + 62, card_y + 15, 1, 90))
+                             (card_x + 56, card_y + 14, 1, card_h - 28))
 
-            # Level name
-            name_font = pygame.font.SysFont("Arial", 24, bold=True)
+            # Mode name
+            name_font = pygame.font.SysFont("Arial", 19, bold=True)
             name_txt = name_font.render(name, True, config.WHITE)
-            self.screen.blit(name_txt, (card_x + 78, card_y + 30))
+            self.screen.blit(name_txt, (card_x + 70, card_y + 20))
 
             # Description
-            desc_font = pygame.font.SysFont("Arial", 15)
+            desc_font = pygame.font.SysFont("Arial", 12)
             desc_txt = desc_font.render(desc, True, (180, 180, 160))
-            self.screen.blit(desc_txt, (card_x + 78, card_y + 68))
-
-            card_y += 150
+            self.screen.blit(desc_txt, (card_x + 70, card_y + 52))
 
         # Bottom instruction
         inst_font = pygame.font.SysFont("Arial", 15)
         inst = inst_font.render(
-            "Press  1  /  2  /  3  to begin",
+            "Press  1 - 8  to begin",
             True, (160, 160, 160))
         inst_rect = inst.get_rect(
             center=(config.SCREEN_WIDTH // 2,
@@ -214,16 +247,8 @@ class UI:
 
     def draw_gesture_prompt(self, gesture_needed, raw_gesture,
                             hold_progress):
-        gesture_names = {
-            config.GESTURE_OPEN_PALM:     "Open Palm",
-            config.GESTURE_PEACE:         "Peace Sign",
-            config.GESTURE_FIST:          "Fist",
-            config.GESTURE_POINT_UP:      "Point Up",
-            config.GESTURE_UNKNOWN:       "No Gesture"
-        }
-
-        needed_name = gesture_names.get(gesture_needed, "")
-        current_name = gesture_names.get(raw_gesture, "No Gesture")
+        needed_name = self.GESTURE_NAMES.get(gesture_needed, "")
+        current_name = self.GESTURE_NAMES.get(raw_gesture, "No Gesture")
 
         pygame.draw.rect(self.screen, (20, 20, 28),
                          (20, 20, 360, 95), border_radius=10)
@@ -247,13 +272,7 @@ class UI:
         self.draw_text("It's a Weed — any gesture loses a life",
                        self.font_tiny, (180, 180, 180), 35, 92)
 
-    def draw_level1_hud(self, flowers_bloomed, streak):
-        self.draw_text(f"Flowers: {flowers_bloomed} / 5",
-                       self.font_small, config.WHITE, 20, 130)
-        self.draw_text(f"Streak: {streak}",
-                       self.font_small, config.GOLD, 20, 165)
-
-    def draw_level2_hud(self, time_left, score, targets,
+    def draw_level1_hud(self, time_left, score, targets,
                         collection):
         # Timer
         self.draw_text(f"Time: {int(time_left)}s",
@@ -313,7 +332,7 @@ class UI:
                                (50, 200, 50),
                                panel_x + 185, y)
 
-    def draw_level3_hud(self, lives, score, time_left,
+    def draw_level2_hud(self, lives, score, time_left,
                         flowers_bloomed, response_time):
         self.draw_text(f"Time: {int(time_left)}s",
                        self.font_medium, config.WHITE, 20, 130)
@@ -341,7 +360,73 @@ class UI:
         self.draw_text(phase, self.font_tiny,
                        phase_color, 20, 285)
 
-    def draw_cam_feed(self, cam_surface):
+    def draw_zen_hud(self, flowers_bloomed):
+        self.draw_text(f"Flowers Bloomed: {flowers_bloomed}",
+                       self.font_small, config.WHITE, 20, 130)
+
+    def draw_speedrush_hud(self, time_left, speed_multiplier,
+                           flowers_bloomed):
+        self.draw_text(f"Time: {int(time_left)}s",
+                       self.font_medium, config.WHITE, 20, 130)
+        self.draw_text(f"Speed: x{speed_multiplier}",
+                       self.font_small, config.GOLD, 20, 180)
+        self.draw_text(f"Flowers: {flowers_bloomed}",
+                       self.font_small, config.WHITE, 20, 215)
+
+    def draw_weather_hud(self, time_left, flowers_bloomed,
+                         weather_event, weather_time_remaining):
+        self.draw_text(f"Time: {int(time_left)}s",
+                       self.font_medium, config.WHITE, 20, 130)
+        self.draw_text(f"Flowers: {flowers_bloomed} / 5",
+                       self.font_small, config.GOLD, 20, 180)
+
+        if weather_event:
+            if weather_event == "rain":
+                icon, label, color = "🌧", "RAIN — Open Palm to clear!", (90, 150, 220)
+            else:
+                icon, label, color = "💨", "WIND — Fist to clear!", (200, 200, 90)
+
+            pygame.draw.rect(self.screen, (20, 20, 28),
+                             (20, 220, 360, 60), border_radius=10)
+            pygame.draw.rect(self.screen, color,
+                             (20, 220, 360, 60), 2, border_radius=10)
+            self.draw_text(f"{icon} {label}", self.font_small,
+                           color, 32, 232)
+            self.draw_text(f"Clears in {weather_time_remaining:.1f}s",
+                           self.font_tiny, (180, 180, 180), 32, 262)
+
+    def draw_precision_hud(self, flowers_bloomed, streak, multiplier,
+                           wilts, max_wilts, score):
+        self.draw_text(f"Score: {score}",
+                       self.font_medium, config.GOLD, 20, 130)
+        self.draw_text(f"Flowers: {flowers_bloomed}",
+                       self.font_small, config.WHITE, 20, 180)
+        self.draw_text(f"Streak: {streak}  (x{multiplier})",
+                       self.font_small, config.GOLD, 20, 215)
+
+        wilt_color = (200, 50, 50) if wilts >= max_wilts - 1 \
+            else (220, 170, 60)
+        self.draw_text(f"Wilts: {wilts} / {max_wilts}",
+                       self.font_small, wilt_color, 20, 250)
+
+    def draw_random_hud(self, time_left, score, flowers_bloomed,
+                        required_gesture, warning_active):
+        self.draw_text(f"Time: {int(time_left)}s",
+                       self.font_medium, config.WHITE, 20, 130)
+        self.draw_text(f"Score: {score}",
+                       self.font_small, config.GOLD, 20, 180)
+        self.draw_text(f"Flowers: {flowers_bloomed}",
+                       self.font_small, config.WHITE, 20, 215)
+
+        name = self.GESTURE_NAMES.get(required_gesture, "")
+        self.draw_text_centered(f"Required: {name}",
+                                self.font_medium, config.GOLD, 160)
+
+        if warning_active:
+            self.draw_text_centered("GESTURE CHANGED!",
+                                    self.font_large, (220, 50, 50), 200)
+
+    def draw_cam_feed(self, cam_surface, mirrored=False):
         if cam_surface:
             self.screen.blit(cam_surface,
                              (config.CAM_X, config.CAM_Y))
@@ -353,6 +438,10 @@ class UI:
                            (150, 150, 150),
                            config.CAM_X,
                            config.CAM_Y + config.CAM_HEIGHT + 5)
+            if mirrored:
+                self.draw_text("MIRRORED", self.font_tiny,
+                               config.GOLD,
+                               config.CAM_X, config.CAM_Y - 18)
 
     def draw_stage_label(self, stage):
         stage_names = {
@@ -384,12 +473,6 @@ class UI:
                           165, 600, 1))
 
         if level == 1:
-            self.draw_text_centered("Practice Garden — Complete!",
-                                    self.font_medium, config.GOLD, 200)
-            self.draw_text_centered(
-                f"Flowers Bloomed:  {flowers_bloomed} / 5",
-                self.font_small, (180, 180, 180), 250)
-        elif level == 2:
             if level_complete:
                 self.draw_text_centered("Collection Complete!",
                                         self.font_medium,
@@ -403,8 +486,60 @@ class UI:
             self.draw_text_centered(
                 f"Flowers Bloomed:  {flowers_bloomed}",
                 self.font_small, (180, 180, 180), 285)
-        elif level == 3:
+        elif level == 2:
             self.draw_text_centered("Survival Mode — Game Over!",
+                                    self.font_medium, config.GOLD, 200)
+            self.draw_text_centered(f"Final Score:  {score}",
+                                    self.font_small, config.GOLD, 250)
+            self.draw_text_centered(
+                f"Flowers Bloomed:  {flowers_bloomed}",
+                self.font_small, (180, 180, 180), 285)
+        elif level == "speedrush":
+            self.draw_text_centered("Speed Rush — Time's Up!",
+                                    self.font_medium, config.GOLD, 200)
+            self.draw_text_centered(f"Final Score:  {score}",
+                                    self.font_small, config.GOLD, 250)
+            self.draw_text_centered(
+                f"Flowers Bloomed:  {flowers_bloomed}",
+                self.font_small, (180, 180, 180), 285)
+        elif level == "weather":
+            if level_complete:
+                self.draw_text_centered("Weather — You Survived!",
+                                        self.font_medium,
+                                        (50, 200, 50), 200)
+            else:
+                self.draw_text_centered("Weather — Time's Up!",
+                                        self.font_medium,
+                                        config.GOLD, 200)
+            self.draw_text_centered(f"Final Score:  {score}",
+                                    self.font_small, config.GOLD, 250)
+            self.draw_text_centered(
+                f"Flowers Bloomed:  {flowers_bloomed}",
+                self.font_small, (180, 180, 180), 285)
+        elif level == "precision":
+            self.draw_text_centered("Precision — 3 Wilts!",
+                                    self.font_medium, config.GOLD, 200)
+            self.draw_text_centered(f"Final Score:  {score}",
+                                    self.font_small, config.GOLD, 250)
+            self.draw_text_centered(
+                f"Flowers Bloomed:  {flowers_bloomed}",
+                self.font_small, (180, 180, 180), 285)
+        elif level == "mirror":
+            if level_complete:
+                self.draw_text_centered("Mirror — Collection Complete!",
+                                        self.font_medium,
+                                        (50, 200, 50), 200)
+            else:
+                self.draw_text_centered("Mirror — Time's Up!",
+                                        self.font_medium,
+                                        config.GOLD, 200)
+            self.draw_text_centered(f"Final Score:  {score}",
+                                    self.font_small, config.GOLD, 250)
+            self.draw_text_centered(
+                f"Flowers Bloomed:  {flowers_bloomed}",
+                self.font_small, (180, 180, 180), 285)
+        elif level == "random":
+            self.draw_text_centered("Random — Time's Up!",
                                     self.font_medium, config.GOLD, 200)
             self.draw_text_centered(f"Final Score:  {score}",
                                     self.font_small, config.GOLD, 250)
